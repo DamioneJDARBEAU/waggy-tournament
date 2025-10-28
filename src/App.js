@@ -66,7 +66,7 @@ const TournamentApp = () => {
     const saved = localStorage.getItem('teams');
     return saved ? JSON.parse(saved) : [
       { id: 1, name: "Honved SC", logo: null },
-      { id: 2, name: "Paradise Youth", logo: null, isYouth: true },
+      { id: 2, name: "Paradise FC Youth", logo: null, isYouth: true },
       { id: 3, name: "10 X O Legends", logo: null },
       { id: 4, name: "Hurricanes SC Youth", logo: null, isYouth: true },
       { id: 5, name: "Combined Northerners", logo: null },
@@ -82,11 +82,11 @@ const TournamentApp = () => {
       { id: 15, name: "Police Sports Club", logo: null },
       { id: 16, name: "North Stars", logo: null },
       { id: 17, name: "St. John's SC", logo: null },
-      { id: 18, name: "Hurricanes", logo: null },
+      { id: 18, name: "Hurricanes SC", logo: null },
       { id: 19, name: "Chrollo FC", logo: null },
       { id: 20, name: "Queen's Park Rangers", logo: null },
-      { id: 21, name: "Camerhogne", logo: null },
-      { id: 22, name: "Paradise", logo: null },
+      { id: 21, name: "FC Camerhogne", logo: null },
+      { id: 22, name: "Paradise FC International", logo: null },
       { id: 23, name: "Idlers SC", logo: null },
       { id: 24, name: "St. David FC", logo: null }
     ];
@@ -281,7 +281,7 @@ const TournamentApp = () => {
     {
       id: 10,
       round: "Round 2",
-      homeTeam: "Camerhogne",
+      homeTeam: "FC Camerhogne",
       awayTeam: "Police Sports Club",
       date: "2025-10-31",
       time: "21:00",
@@ -326,7 +326,7 @@ const TournamentApp = () => {
     {
       id: 13,
       round: "Round 2",
-      homeTeam: "Hurricanes",
+      homeTeam: "Hurricanes SC",
       awayTeam: "10 X O Legends",
       date: "2025-11-08",
       time: "19:00",
@@ -341,7 +341,7 @@ const TournamentApp = () => {
     {
       id: 14,
       round: "Round 2",
-      homeTeam: "Paradise",
+      homeTeam: "Paradise FC International",
       awayTeam: "Honved SC",
       date: "2025-11-08",
       time: "21:00",
@@ -1984,12 +1984,7 @@ const TournamentApp = () => {
                     </ul>
                   </div>
 
-                  <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 text-center">
-                    <p className="text-xs text-yellow-800">
-                      <strong>⚠️ Default Password:</strong> WaggyT2025!Secure<br />
-                      <span className="text-red-600 font-semibold">Change this in the code before deployment!</span>
-                    </p>
-                  </div>
+                  
                 </div>
               )}
             </div>
@@ -2040,7 +2035,6 @@ const TournamentApp = () => {
           </p>
           <p className="text-xs opacity-50 mt-2">
             Fixtures and venues are liable to be changed during the tournament.
-            Teams will be notified no less than 4 hours of these changes.
           </p>
         </div>
       </footer>
