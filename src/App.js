@@ -35,6 +35,10 @@ const TournamentApp = () => {
   const [syncStatus, setSyncStatus] = useState('synced');
   const [lastSyncTime, setLastSyncTime] = useState(null);
   
+  // Team editing state
+  const [editingTeamId, setEditingTeamId] = useState(null);
+  const [editingTeamName, setEditingTeamName] = useState('');
+  
   const [selectedMatchId, setSelectedMatchId] = useState(() => {
     const saved = localStorage.getItem('selectedMatchId');
     return saved ? parseInt(saved, 10) : null;
@@ -66,7 +70,7 @@ const TournamentApp = () => {
     const saved = localStorage.getItem('teams');
     return saved ? JSON.parse(saved) : [
       { id: 1, name: "Honved SC", logo: null },
-      { id: 2, name: "Paradise FC Youth", logo: null, isYouth: true },
+      { id: 2, name: "Paradise Youth", logo: null, isYouth: true },
       { id: 3, name: "10 X O Legends", logo: null },
       { id: 4, name: "Hurricanes SC Youth", logo: null, isYouth: true },
       { id: 5, name: "Combined Northerners", logo: null },
@@ -82,11 +86,11 @@ const TournamentApp = () => {
       { id: 15, name: "Police Sports Club", logo: null },
       { id: 16, name: "North Stars", logo: null },
       { id: 17, name: "St. John's SC", logo: null },
-      { id: 18, name: "Hurricanes SC", logo: null },
+      { id: 18, name: "Hurricanes", logo: null },
       { id: 19, name: "Chrollo FC", logo: null },
       { id: 20, name: "Queen's Park Rangers", logo: null },
-      { id: 21, name: "FC Camerhogne", logo: null },
-      { id: 22, name: "Paradise FC International", logo: null },
+      { id: 21, name: "Camerhogne", logo: null },
+      { id: 22, name: "Paradise", logo: null },
       { id: 23, name: "Idlers SC", logo: null },
       { id: 24, name: "St. David FC", logo: null }
     ];
@@ -281,7 +285,7 @@ const TournamentApp = () => {
     {
       id: 10,
       round: "Round 2",
-      homeTeam: "FC Camerhogne",
+      homeTeam: "Camerhogne",
       awayTeam: "Police Sports Club",
       date: "2025-10-31",
       time: "21:00",
@@ -326,7 +330,7 @@ const TournamentApp = () => {
     {
       id: 13,
       round: "Round 2",
-      homeTeam: "Hurricanes SC",
+      homeTeam: "Hurricanes",
       awayTeam: "10 X O Legends",
       date: "2025-11-08",
       time: "19:00",
@@ -341,7 +345,7 @@ const TournamentApp = () => {
     {
       id: 14,
       round: "Round 2",
-      homeTeam: "Paradise FC International",
+      homeTeam: "Paradise",
       awayTeam: "Honved SC",
       date: "2025-11-08",
       time: "21:00",
@@ -594,6 +598,24 @@ const TournamentApp = () => {
 
   // ============= TIME AND SESSION MANAGEMENT =============
   useEffect(() => {
+  // ============= KEYBOARD SHORTCUT (SHIFT+M) =============
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Check for Shift+M
+      if (e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+        e.preventDefault();
+        if (!isAuthenticated) {
+          setCurrentView('login');
+        } else {
+          setCurrentView('management');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isAuthenticated]);
+
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
     }, 60000);
@@ -790,83 +812,52 @@ const TournamentApp = () => {
         t.id === teamId ? { ...t, logo: e.target.result } : t
       ));
     };
+
+  // ============= TEAM EDITING FUNCTIONS =============
+  const startEditingTeam = (teamId, currentName) => {
+    setEditingTeamId(teamId);
+    setEditingTeamName(currentName);
+  };
+
+  const cancelEditingTeam = () => {
+    setEditingTeamId(null);
+    setEditingTeamName('');
+  };
+
+  const saveTeamName = () => {
+    if (!editingTeamName.trim()) {
+      alert('Team name cannot be empty');
+      return;
+    }
+
+    const oldTeam = teams.find(t => t.id === editingTeamId);
+    const oldName = oldTeam.name;
+    const newName = editingTeamName.trim();
+
+    // Update teams array
+    const updatedTeams = teams.map(team =>
+      team.id === editingTeamId
+        ? { ...team, name: newName }
+        : team
+    );
+
+    // Update all matches that reference this team
+    const updatedMatches = matches.map(match => ({
+      ...match,
+      homeTeam: match.homeTeam === oldName ? newName : match.homeTeam,
+      awayTeam: match.awayTeam === oldName ? newName : match.awayTeam
+    }));
+
+    setTeams(updatedTeams);
+    setMatches(updatedMatches);
+
+    // Clear editing state
+    setEditingTeamId(null);
+    setEditingTeamName('');
+  };
+
     reader.readAsDataURL(file);
   };
-{/* Team Management Section */}
-<div className="bg-white rounded-lg shadow-md p-6 border-2 border-red-600 mt-8">
-  <h2 className="text-2xl font-bold mb-6 text-gray-900 flex items-center gap-2">
-    <Users className="w-6 h-6 text-red-600" />
-    Team Management
-  </h2>
-
-  <div className="space-y-4">
-    {teams.map(team => (
-      <div key={team.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border-2 border-gray-200 hover:border-red-600 transition">
-        {team.isEditing ? (
-          <div className="flex-1 flex items-center gap-3">
-            <input
-              type="text"
-              value={team.tempName}
-              onChange={(e) =>
-                setTeams(teams.map(t =>
-                  t.id === team.id ? { ...t, tempName: e.target.value } : t
-                ))
-              }
-              className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-red-600"
-            />
-            <button
-              onClick={() =>
-                setTeams(teams.map(t =>
-                  t.id === team.id
-                    ? { ...t, name: t.tempName, isEditing: false }
-                    : t
-                ))
-              }
-              className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-            >
-              <Save className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() =>
-                setTeams(teams.map(t =>
-                  t.id === team.id ? { ...t, isEditing: false } : t
-                ))
-              }
-              className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-3">
-              {team.logo && (
-                <img
-                  src={team.logo}
-                  alt={team.name}
-                  className="w-8 h-8 object-contain rounded"
-                />
-              )}
-              <span className="font-semibold text-gray-900">{team.name}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() =>
-                  setTeams(teams.map(t =>
-                    t.id === team.id ? { ...t, isEditing: true, tempName: t.name } : t
-                  ))
-                }
-                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    ))}
-  </div>
-</div>
 
   // ============= VIEW COMPONENTS =============
   const ScheduleView = () => {
@@ -964,8 +955,12 @@ const TournamentApp = () => {
                         <div className="flex items-center gap-4">
                           <Calendar className="w-4 h-4" />
                           <span>{formatDate(match.date)}</span>
-                          <Clock className="w-4 h-4 ml-2" />
-                          <span>{formatTime(match.time)}</span>
+                          {status !== 'completed' && (
+                            <>
+                              <Clock className="w-4 h-4 ml-2" />
+                              <span>{formatTime(match.time)}</span>
+                            </>
+                          )}
                         </div>
                         {status === 'live' && (
                           <span className="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full animate-pulse">
@@ -1365,6 +1360,66 @@ const TournamentApp = () => {
         </div>
 
         {/* Match Management */}
+        {/* Team Management */}
+        <div className="bg-white rounded-lg shadow-md p-6 border-2 border-red-600">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+            <Users className="w-6 h-6 text-red-600" />
+            Team Management
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">Edit team names. Changes will update all matches automatically.</p>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-2">
+            {teams.map(team => (
+              <div key={team.id} className="border-2 border-gray-200 rounded-lg p-3 hover:border-red-300 transition bg-gray-50">
+                {editingTeamId === team.id ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={editingTeamName}
+                      onChange={(e) => setEditingTeamName(e.target.value)}
+                      className="w-full px-3 py-2 border-2 border-red-600 rounded font-semibold focus:ring-2 focus:ring-red-600"
+                      autoFocus
+                      onKeyPress={(e) => e.key === 'Enter' && saveTeamName()}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={saveTeamName}
+                        className="flex-1 px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition font-semibold text-sm flex items-center justify-center gap-1"
+                      >
+                        <Save className="w-4 h-4" />
+                        Save
+                      </button>
+                      <button
+                        onClick={cancelEditingTeam}
+                        className="flex-1 px-3 py-1.5 bg-gray-600 text-white rounded hover:bg-gray-700 transition font-semibold text-sm flex items-center justify-center gap-1"
+                      >
+                        <X className="w-4 h-4" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 truncate">{team.name}</div>
+                      {team.isYouth && (
+                        <span className="text-xs text-blue-600 font-medium">Youth Team</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => startEditingTeam(team.id, team.name)}
+                      className="p-2 hover:bg-red-50 rounded-lg transition group flex-shrink-0"
+                      title="Edit team name"
+                    >
+                      <Edit2 className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg shadow-md p-6 border-2 border-red-600">
           <h2 className="text-2xl font-bold mb-6 text-gray-900">Match Management</h2>
 
@@ -1959,6 +2014,7 @@ const TournamentApp = () => {
               >
                 Fan View
               </button>
+              {(currentView !== 'fan' || isAuthenticated) && (
               <button
                 onClick={() => !isAuthenticated ? setCurrentView('login') : setCurrentView('management')}
                 className={`px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2 ${currentView === 'management' || currentView === 'login'
@@ -1969,6 +2025,7 @@ const TournamentApp = () => {
                 <Users className="w-5 h-5" />
                 Management
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -1982,6 +2039,7 @@ const TournamentApp = () => {
             >
               Fan View
             </button>
+            {(currentView !== 'fan' || isAuthenticated) && (
             <button
               onClick={() => { !isAuthenticated ? setCurrentView('login') : setCurrentView('management'); setShowMobileMenu(false); }}
               className="w-full px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg font-semibold transition text-left flex items-center gap-2"
@@ -1989,6 +2047,7 @@ const TournamentApp = () => {
               <Users className="w-5 h-5" />
               Management
             </button>
+            )}
           </div>
         )}
       </header>
@@ -2059,7 +2118,12 @@ const TournamentApp = () => {
                     </ul>
                   </div>
 
-                  
+                  <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 text-center">
+                    <p className="text-xs text-yellow-800">
+                      <strong>⚠️ Default Password:</strong> WaggyT2025!Secure<br />
+                      <span className="text-red-600 font-semibold">Change this in the code before deployment!</span>
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -2110,6 +2174,7 @@ const TournamentApp = () => {
           </p>
           <p className="text-xs opacity-50 mt-2">
             Fixtures and venues are liable to be changed during the tournament.
+            Teams will be notified no less than 4 hours of these changes.
           </p>
         </div>
       </footer>
